@@ -11,8 +11,11 @@ import time
 import mcubes
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.filters import gaussian_laplace
+from scipy import ndimage
 import datetime
 import subprocess
+
+margin = 0.01
 
 print ("""───▐▀▄──────▄▀▌───▄▄▄▄▄▄▄─────────────
 ───▌▒▒▀▄▄▄▄▀▒▒▐▄▀▀▒██▒██▒▀▀▄──────────
@@ -56,10 +59,9 @@ def export(name, tile, translate) :
 	# print translate
 
 	start = time.time()
-
 	dim = tile.shape
 
-	v, t = mcubes.marching_cubes(tile, 0)
+	v, t = mcubes.marching_cubes(tile, 0.3)
 	print("Reconstruction in %f" % (time.time() - start))
 	obj_filename = "./%s.obj" % name
 	decimated_obj = "./%s.5.obj"
@@ -76,7 +78,7 @@ def export(name, tile, translate) :
 
 	print("\t Exporting %s (%d verts , %d tris) in %fs" % (name, len(v), len(t), (time.time() - start)))
 	objFile.close()
-	subprocess.call(["commandlineDecimater", "-M", "Q", "-n", "0.05", "-i", obj_filename, "-o", decimated_obj % name]); 
+	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.04", "-i", obj_filename, "-o", decimated_obj % name]); 
 
 	translate_obj(obj_filename, translate)
 	translate_obj(decimated_obj % name, translate)
@@ -103,6 +105,15 @@ def partition(data, total_dim, tile_dim, g_min) :
 		y = int((p[1] - g_min[1]) / tile_dim)
 		partitions[x][y].append(p)
 
+		if (p[0] - g_min[0]) / tile_dim - int((p[0] - g_min[0]) / tile_dim) < margin and x > 0 and  (p[1] - g_min[1]) / tile_dim - int((p[1] - g_min[1]) / tile_dim) < margin and y > 0 :
+			partitions[x-1][y-1].append(p)
+
+		if (p[0] - g_min[0]) / tile_dim - int((p[0] - g_min[0]) / tile_dim) < margin and x > 0 :
+			partitions[x-1][y].append(p)
+
+		if (p[1] - g_min[1]) / tile_dim - int((p[1] - g_min[1]) / tile_dim) < margin and y > 0 :
+			partitions[x][y-1].append(p)
+
 	return partitions
 
 def computeRange(pmin, pmax, p):
@@ -114,17 +125,21 @@ def computeRange(pmin, pmax, p):
 
 def populateVolume(points, vol_dim, tile_pos) :
 	start = time.time()
-	grid = np.ones(vol_dim)
+	grid = np.zeros(vol_dim * ( 1 + margin))
+	out = 0
 
 	print("Populating %d x %d x %d volume" % grid.shape, end="\t")
 	for p in points :
-		p_grid = np.round(p[:3] - tile_pos) - np.ones(3)
+		p_grid = np.floor(p[:3] - tile_pos)
 
 		# print( "%d %d %d" % (p_grid[0], p_grid[1], p_grid[2]), file=f)
+		if p_grid[0] < grid.shape[0] and p_grid[1] < grid.shape[1] :
+			for h in range( int(p_grid[2])):
+				grid[p_grid[0]][p_grid[1]][h] = 1
+		else :
+			out += 1
 
-		for h in range( int(p_grid[2])):
-			grid[p_grid[0]][p_grid[1]][h] = grid[p_grid[0]][p_grid[1]][h] - 50
-
+	print("%d is out of bounds" % out)
 
 		# grid[p_grid[0]] [p_grid[1]] [p_grid[2]] = -100
 		
@@ -142,7 +157,7 @@ programStart = time.time()
 print("loading " + filename, end="\t")
 start = time.time()
 
-data = pd.read_csv(filename, delimiter=" ").values /1.4
+data = pd.read_csv(filename, delimiter=" ").values
 end = time.time()
 print (end - start)
 
@@ -152,13 +167,15 @@ p_max = np.array([0, 0, 0])
 for i in range(data.shape[0]) :
 	computeRange(p_min, p_max, data[i])
 
-downsample = 1
+downsample = 2
 tileSize = 400
 
 totalRange = (p_max-p_min)
-tilePoints = partition(data, totalRange, tileSize, p_min)
+tilePoints = partition(data, totalRange, tileSize, p_min) 
 
-vol_dim = np.array([tileSize,tileSize,totalRange[2]])
+vol_dim = np.array([tileSize,tileSize,totalRange[2]]) 
+
+struct = ndimage.generate_binary_structure(3,3)
 
 for tile_x in range(len(tilePoints)):
 	for tile_y in range(len(tilePoints[tile_x])):
@@ -166,11 +183,24 @@ for tile_x in range(len(tilePoints)):
 		tile_pos =  p_min + np.array([tile_x,tile_y,0]) * vol_dim
 
 		grid = populateVolume(tilePoints[tile_x][tile_y], vol_dim, tile_pos )
+		
+		# grid = ndimage.binary_closing(grid, iterations=5);
+		grid = ndimage.binary_dilation(grid, structure=struct);
+		grid = ndimage.binary_dilation(grid, structure=struct);
+		# grid = ndimage.binary_dilation(grid);
+		# grid = ndimage.binary_dilation(grid);
+		# grid = ndimage.binary_dilation(grid);
 
-		filtered = gaussian_filter(grid, sigma=2, mode='constant', cval=1.0 )
-		# filtered = gaussian_laplace(filtered, sigma=2, mode='nearest')
+		grid = ndimage.binary_erosion(grid, structure=struct);
+		grid = ndimage.binary_erosion(grid, structure=struct);
+		# grid = ndimage.binary_erosion(grid);
+		# grid = ndimage.binary_erosion(grid);
+		# grid = ndimage.binary_erosion(grid);
 
-		export("test%d.%d" % (tile_x, tile_y), filtered, tile_pos)
+		# grid = gaussian_filter(grid.astype(np.float), sigma=1, mode='nearest' )
+		# filtered = gaussian_filter(grid, sigma=2, mode='nearest')
+
+		export("test%d.%d" % (tile_x, tile_y), grid, tile_pos)
 
 
 
