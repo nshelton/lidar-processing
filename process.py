@@ -15,7 +15,7 @@ from scipy import ndimage
 import datetime
 import subprocess
 
-margin = 0.01
+margin = 0.02
 
 print ("""───▐▀▄──────▄▀▌───▄▄▄▄▄▄▄─────────────
 ───▌▒▒▀▄▄▄▄▀▒▒▐▄▀▀▒██▒██▒▀▀▄──────────
@@ -78,7 +78,7 @@ def export(name, tile, translate) :
 
 	print("\t Exporting %s (%d verts , %d tris) in %fs" % (name, len(v), len(t), (time.time() - start)))
 	objFile.close()
-	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.04", "-i", obj_filename, "-o", decimated_obj % name]); 
+	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.5", "-i", obj_filename, "-o", decimated_obj % name]); 
 
 	translate_obj(obj_filename, translate)
 	translate_obj(decimated_obj % name, translate)
