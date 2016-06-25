@@ -1,4 +1,5 @@
 
+from __future__ import print_function
 import sys
 import numpy as np
 import glob
@@ -40,70 +41,85 @@ def writeMesh(v, c, t, filename):
 ##---------------------------------------------------------------------------
 
 matches = glob.glob(sys.argv[1])
-print("= = = = = = = = = MATCHES = = = = = = = = = =")
-print(matches[0])
+print("= = = = = = = = = Merging = = = = = = = = = =")
+print(matches[0], matches[1])
 
-all_verts = np.array([])
-all_tris = np.array([])
-all_colors = np.array([])
-
-
-progress = 0
-verts = []
-tris = []
-trees = []
-
-# for i in range(2):
-# 	(v, t) = readMesh(matches[i])
-# 	verts.append(v)
-# 	tris.append(t)
-
-# 	print "%d points in %s" % (v.shape[0], matches[i])
-# 	# print v
-# 	trees.append(spatial.KDTree(v));
-
-
-# print "overlap is %d" % trees[0].count_neighbors(trees[1], 1)
-
-# num_match = 0;
-
-# for v in verts[1]:
-# 	(dist, index) = trees[0].query(v)
-# 	# print v 
-# 	# print trees[0].data[index]
-# 	# print v -trees[0].data[index]
-# 	# print "----------"
-# 	if ( dist < 1 ):
-# 		# print index
-# 		num_match += 1
+sys.setrecursionlimit(15000)
 
 # print num_match
-obj_filename = matches[0]
-print("Reading " + obj_filename)
+mesh1 = matches[0]
+mesh2 = matches[1]
+print("Reading " + mesh1)
+(vert1, tri1) = readMesh(mesh1);
+print("%d points, %d tris" % (vert1.shape[0], tri1.shape[0]) )
 
-(verts, tris) = readMesh(obj_filename);
+print("Reading " + mesh2)
+(vert2, tri2) = readMesh(mesh2);
+print("%d points, %d tris" % (vert2.shape[0], tri2.shape[0]) )
 
-num_verts = verts.shape[0]
-num_tris = tris.shape[0]
-
-
-tree = spatial.KDTree(verts);
-
-
-num_match = 0;
-
-diffs = []
-
-for v in verts:
-	(dist, index) = tree.query(v)
-	diffs.append(dist)
-	print "closest : %f" % dist
-
-print num_match
+tree1 = spatial.KDTree(vert1);
+tree2 = spatial.KDTree(vert2);
 
 
-print "Points %f " % num_verts
-print "total_Points %f " % all_verts.shape[0]
+print("iterating through "+ mesh1)
 
-writeMesh(all_verts, all_colors, all_tris, "color.merged.obj")
+
+v_max = np.amax(vert1, axis=0) 
+v_min = np.amin(vert1, axis=0) 
+
+edgeMask = np.zeros(vert1.shape[0])
+numEdges = 0
+edgesProcessed = 0
+
+th = 10
+
+#Label edge verts
+for i in range(vert1.shape[0]):
+	d_min = np.abs(vert1[i] - v_min);
+	d_max = np.abs(vert1[i] - v_max);
+	if d_min[0] < th or d_min[1] < th or d_max[0] < th or d_max[1] < th or d_min[2] < th :
+		edgeMask[i] = 1
+		numEdges += 1
+
+mergeMaskVerts2 = np.zeros(vert2.shape[0])
+num_merge = 0
+
+for i in range(vert1.shape[0]):
+	if edgeMask[i] > 0:
+		(dist, index) = tree2.query(vert1[i])
+
+		if dist < th * 2 :
+			edgesProcessed += 1
+			mergeMaskVerts2[index] = i
+			num_merge += 1
+			print ('>>%d %d%%' % (i, 100 * edgesProcessed / numEdges), end='\r')
+			sys.stdout.flush()
+
+print("MErgine %d vertices" % num_merge)
+# make the triangles from vert2 point to verts in vert1 
+
+for i in range(tri2.shape[0]):	
+	for j in range(3):
+		if mergeMaskVerts2[tri2[i][j]] > 0 :
+			tri2[i][j] = mergeMaskVerts2[tri2[i][j]]
+		else :
+			tri2[i][j] += vert1.shape[0]
+
+# print("merging verts: " + str(len(diffs)))
+
+all_tris = np.vstack((tri1, tri2))
+all_verts = np.vstack((vert1, vert2))
+colors = np.ones(all_verts.shape)
+
+
+
+print("total points %f " % all_verts.shape[0])
+print("total faces: %f " % all_tris.shape[0])
+
+
+print(np.min(all_tris))
+print(np.max(all_tris))
+
+writeMesh(all_verts, colors, all_tris, "smooth.merged.obj")
+
 
