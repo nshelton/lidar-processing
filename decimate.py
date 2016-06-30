@@ -45,9 +45,9 @@ matches = glob.glob(sys.argv[1])
 print(matches)
 
 for file_name in matches:
-	# translate_obj(file_name, -translate)
+	translate_obj(file_name, -translate)
+	# translate_obj(file_name, translate)
 
 	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", "dec." + file_name])
 
-	# translate_obj(file_name, translate)
 

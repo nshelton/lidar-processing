@@ -12,39 +12,43 @@ import subprocess
 
 
 
-start = time.time()
-filename = "amaster.obj"
+matches = glob.glob(sys.argv[1])
+print("= = = = = = = = = Merging = = = = = = = = = =")
+print(matches)
 
-inFile = open(filename, "r");
-outFile = open("color." + filename, "w");
+for filename in matches:
+	start = time.time()
 
-
-
-for line in inFile:
-	result = line.split(' ')
-
-	if result[0] == "#":
-		continue
-
-	if result[0] == "v":
-		# if len(result) == 7 :
-			# outFile.write(line)
-		# if len(result) == 4 :
-		v = result[1:4]
-
-		# print(v)
-
-		cmap = matplotlib.cm.get_cmap('inferno')
-
-		c = cmap(float(v[2]) / 350)
-		# print("color", c)
-
-		outFile.write("v %s %s %s %s %s %s\n" % (v[0], v[1], v[2], c[0], c[1], c[2]))
-
-	else :
-		outFile.write(line)
+	inFile = open(filename, "r");
+	outFile = open("color." + filename, "w");
 
 
 
-outFile.close()
+	for line in inFile:
+		result = line.split(' ')
 
+		if result[0] == "#":
+			continue
+
+		if result[0] == "v":
+			result = line.replace("\n", "").split(' ')
+			# if len(result) == 7 :
+				# outFile.write(line)
+			# if len(result) == 4 :
+			v = result[1:4]
+
+			# print(v)
+
+			cmap = matplotlib.cm.get_cmap('inferno')
+
+			c = cmap(float(v[2]) / 350)
+			# print("color", c)
+
+			outFile.write("v %s %s %s %s %s %s\n" % (v[0], v[1], v[2], c[0], c[1], c[2]))
+
+		else :
+			outFile.write(line)
+
+
+	outFile.close()
+	print("ecported " +filename)

@@ -30,7 +30,7 @@ def colorize(filename):
 
 	mesh = pymesh.load_mesh(filename)
 	vert = mesh.vertices
-	tri = mesh.faces - 1
+	tri = mesh.faces 
 
 	cmap = matplotlib.cm.get_cmap('inferno')
 
@@ -52,33 +52,33 @@ matches = glob.glob(sys.argv[1])
 print("= = = = = = = = = Merging = = = = = = = = = =")
 print(matches)
 
-total = pymesh.load_mesh(matches[0])
-filename = matches[0]
-print("loading " + filename)
 
-for i in range(1, len(matches)):
+dims = np.array([5,4])
 
-	print("Master has %d triangles" % (total.num_faces))
-
-	filename = matches[i]
-
-	print("loading " + filename)
-
-	to_merge = pymesh.load_mesh(filename)
-
-
-	print("%d verts" % (to_merge.num_vertices))
-	start = time.time()
-
-	total = pymesh.boolean(total, to_merge, operation="union")
-	print("Merged in %f" % (time.time() - start))
-	print("Exporting Master %dpts, %dfaces" % (total.num_vertices, total.num_faces) )
+for y in [0] : 
+	print("merging COL %d" % y)
+	filename = "dec.test0.%d.obj" % y
+	total = pymesh.load_mesh(filename)
 	
-	pymesh.save_mesh("master.obj", total)
+
+	for x in range(1, dims[0]) : 
+		filename = "dec.test%d.%d.obj" % (x,y)
+
+		print("loading " + filename)
+
+		to_merge = pymesh.load_mesh(filename)
 
 
+		print("%d verts" % (to_merge.num_vertices))
+		start = time.time()
 
+		total = pymesh.boolean(total, to_merge, operation="union")
+		print("Merged in %f" % (time.time() - start))
+		print("Exporting Master %dpts, %dfaces" % (total.num_vertices, total.num_faces) )
+		
+		column_name = "col%d.obj" % y
+		pymesh.save_mesh(column_name, total)
 
-	# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", "dec." + file_name])
+		subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", column_name, "-o", "min." + column_name])
 
-	# test = pymesh.load_mesh(filename)
+		total = pymesh.load_mesh(column_name)

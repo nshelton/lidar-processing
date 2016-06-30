@@ -14,6 +14,7 @@ from scipy.ndimage.filters import gaussian_laplace
 from scipy import ndimage
 import datetime
 import subprocess
+import os.path
 
 margin = 0.02
 
@@ -64,7 +65,7 @@ def export(name, tile, translate) :
 	v, t = mcubes.marching_cubes(tile, 0.3)
 	print("Reconstruction in %f" % (time.time() - start))
 	obj_filename = "./%s.obj" % name
-	decimated_obj = "./%s.5.obj"
+	# decimated_obj = "./dec.%s.obj"
 
 	objFile = open(obj_filename, "w");
 
@@ -78,10 +79,10 @@ def export(name, tile, translate) :
 
 	print("\t Exporting %s (%d verts , %d tris) in %fs" % (name, len(v), len(t), (time.time() - start)))
 	objFile.close()
-	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.5", "-i", obj_filename, "-o", decimated_obj % name]); 
+	# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.5", "-i", obj_filename, "-o", decimated_obj % name]); 
 
 	translate_obj(obj_filename, translate)
-	translate_obj(decimated_obj % name, translate)
+	# translate_obj(decimated_obj % name, translate)
 
 def partition(data, total_dim, tile_dim, g_min) :
 	start = time.time()
@@ -151,13 +152,14 @@ def populateVolume(points, vol_dim, tile_pos) :
 # ============================== MAIN ===========================================
 
 # files =  glob.glob("./*swc3.las.txt")
-filename = "/Users/nshelton/lidar-processing/data/cinderAustin/Capitol.xyz"
+# filename = "/Users/nshelton/lidar-processing/data/cinderAustin/Capitol.xyz"
+filename = "./east-swa1.las.txt"
 programStart = time.time()
 
 print("loading " + filename, end="\t")
 start = time.time()
 
-data = pd.read_csv(filename, delimiter=" ").values
+data = pd.read_csv(filename, delimiter=",").values
 end = time.time()
 print (end - start)
 
@@ -179,6 +181,12 @@ struct = ndimage.generate_binary_structure(3,3)
 
 for tile_x in range(len(tilePoints)):
 	for tile_y in range(len(tilePoints[tile_x])):
+		result_file ="tiles/l0.%d.%d.obj" % (tile_x, tile_y)
+		if(os.path.exists(result_file)):
+			print("tile %s exists, skipping" % result_file)
+			continue
+
+
 		print("Process Tile%d.%d : %d points" % ( tile_x, tile_y, len(tilePoints[tile_x][tile_y])))
 		tile_pos =  p_min + np.array([tile_x,tile_y,0]) * vol_dim
 
@@ -200,7 +208,7 @@ for tile_x in range(len(tilePoints)):
 		# grid = gaussian_filter(grid.astype(np.float), sigma=1, mode='nearest' )
 		# filtered = gaussian_filter(grid, sigma=2, mode='nearest')
 
-		export("test%d.%d" % (tile_x, tile_y), grid, tile_pos)
+		export(result_file, grid, tile_pos)
 
 
 
