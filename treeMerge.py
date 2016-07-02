@@ -11,6 +11,7 @@ import time
 import subprocess
 import math
 import os.path
+import thread
 
 
 def writeMesh(v, c, t, filename):
@@ -50,11 +51,16 @@ def colorize(filename):
 #############################################################################
 ##---------------------------------------------------------------------------
 
-def tileName(x, y) :
-	return "dec.test%d.%d.obj" % (x, y)
+meshBuffer = [0, 0]
+readyMutex = [0, 0]
+block = "swa1"
 
-def tryGetTile(x, y):
-	name = tileName(x,y)
+
+def tileName(x, y, l) :
+	return "%s-tiles/dec.l%d.%d.%d.obj" % (block, l, x, y)
+
+def tryGetTile(x, y, l):
+	name = tileName(x, y, l)
 	print(name)
 	if(os.path.exists(name)):
 		return pymesh.load_mesh(name)
@@ -62,58 +68,75 @@ def tryGetTile(x, y):
 		return ""
 
 
-def tryMerge(f1, f2):
+def tryMerge(f1, f2, index):
+	merged = ""
 	if f1 == "" and f2 == "" :
-		return ""
+		merged = ""
 	if f1 == "" :
-		return f2
+		merged = f2
 	if f2 == "" :
-		return f1
+		merged = f1
 	else:
 		start = time.time()
 		merged = pymesh.boolean(f1, f2, operation="union")
 		print("\tmerged in %f" % (time.time() - start))
-		return merged
 
-matches = glob.glob(sys.argv[1])
-print("= = = = = = = = = Tiles = = = = = = = = = =")
+	meshBuffer[index] = merged
+	readyMutex[index] = 1
+# matches = glob.glob(sys.argv[1])
+# print("= = = = = = = = = Tiles = = = = = = = = = =")
 # print(matches)
 
 
-tx = 6
-ty = 5
 
-baseLevel = []
-
-for x in range(tx):
-	baseLevel.append([])
-	for y in range(ty):
-		baseLevel[x].append(tileName(x,y))
-
-	print(baseLevel[x])
+tx = 16
+ty = 16
 
 print("= = = = = = = = = Merges = = = = = = = = = =")
+levels = 4
 
-#recursive step
-for x in range(int(math.ceil(len(baseLevel) / 2.0))) :	
-	for y in range(int(math.ceil(len(baseLevel[x]) / 2.0))) :
-		ta = tryGetTile(2 * x + 0, 2 * y + 0)
-		tb = tryGetTile(2 * x + 1, 2 * y + 0)
-		tc = tryGetTile(2 * x + 0, 2 * y + 1)
-		td = tryGetTile(2 * x + 1, 2 * y + 1)
+for l in range(levels) :
+	tx /=2
+	ty /=2
 
-		# TODO : Multithread dis bish??
-		print(" === Merge ======> %s, %s" % (ta, tb))
-		tab = tryMerge(ta, tb)
-		
-		print(" === Merge ======> %s, %s" % (tc, td))
-		tcd = tryMerge(tc, td)
+	for x in range(tx):
+		for y in range(ty):
+			readyMutex = [0, 0]
+			result_name = "%s-tiles/l%d.%d.%d.obj" % (block, l+1, x, y)
+			if(os.path.exists(result_name)):
+				print("tile %s exists, skipping" % result_name)
+				continue
 
-		result_name = "l1.%d.%d.obj" % (x, y)
-		print(" === Merge Both ======> %s " % result_name)
-		full_tile = tryMerge(tab, tcd)
-		pymesh.save_mesh(result_name, full_tile)
-		# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", result_name, "-o", "min." + result_name])
+			ta = tryGetTile(2 * x + 0, 2 * y + 0, l)
+			tb = tryGetTile(2 * x + 1, 2 * y + 0, l)
+			tc = tryGetTile(2 * x + 0, 2 * y + 1, l)
+			td = tryGetTile(2 * x + 1, 2 * y + 1, l)
+
+			start = time.time()
+
+			print(" === Merge ======> %s, %s" % (ta, tb))
+			thread.start_new_thread(tryMerge, (ta, tb, 0 ))
+			
+			print(" === Merge ======> %s, %s" % (tc, td))
+			thread.start_new_thread(tryMerge, (tc, td, 1 ))
+
+			# wait to finish
+			while readyMutex[0] == 0 and readyMutex[1] == 0 :
+				time.sleep(1)
+
+			print("\with multithreading: %f" % (time.time() - start))
+
+			print(" === Merge Both ======> %s " % result_name)
+			tryMerge(meshBuffer[0], meshBuffer[1], 0)
+
+			# wait to finis	h
+			while readyMutex[0] == 0 :
+				time.sleep(1)
+
+			if meshBuffer[0] != "" :
+				pymesh.save_mesh(result_name, meshBuffer[0])
+				dec_result_name = "%s-tiles/dec.l%d.%d.%d.obj" % (block, l+1, x, y)
+				subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", result_name, "-o", dec_result_name])
 
 
 exit(0)

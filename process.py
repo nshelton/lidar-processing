@@ -153,7 +153,10 @@ def populateVolume(points, vol_dim, tile_pos) :
 
 # files =  glob.glob("./*swc3.las.txt")
 # filename = "/Users/nshelton/lidar-processing/data/cinderAustin/Capitol.xyz"
-filename = "./east-swa1.las.txt"
+
+inputFile = "swa2"
+
+filename = "./%s.las.txt" % inputFile
 programStart = time.time()
 
 print("loading " + filename, end="\t")
@@ -181,7 +184,13 @@ struct = ndimage.generate_binary_structure(3,3)
 
 for tile_x in range(len(tilePoints)):
 	for tile_y in range(len(tilePoints[tile_x])):
-		result_file ="tiles/l0.%d.%d.obj" % (tile_x, tile_y)
+
+		current_time = datetime.datetime.now().time()
+		
+
+		print("time is %s", current_time.isoformat() )
+		
+		result_file ="%s-tiles/l0.%d.%d.obj" % (inputFile, tile_x, tile_y)
 		if(os.path.exists(result_file)):
 			print("tile %s exists, skipping" % result_file)
 			continue

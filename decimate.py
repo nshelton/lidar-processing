@@ -14,7 +14,7 @@ from scipy.ndimage.filters import gaussian_laplace
 from scipy import ndimage
 import datetime
 import subprocess
-
+import os
 
 import sys
 import glob
@@ -45,9 +45,18 @@ matches = glob.glob(sys.argv[1])
 print(matches)
 
 for file_name in matches:
-	translate_obj(file_name, -translate)
-	# translate_obj(file_name, translate)
 
-	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", "dec." + file_name])
+	path = file_name.split("/")
+	path[len(path) - 1] =  "dec." + path[len(path) - 1]
+
+	outputFilename = "/".join(path)
+	if(os.path.exists(outputFilename)):
+		print("tile %s exists, skipping" % outputFilename)
+		continue
+	# translate_obj(file_name, -translate)
+
+	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", outputFilename])
+	
+	# translate_obj(file_name, translate)
 
 

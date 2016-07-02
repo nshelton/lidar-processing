@@ -9,7 +9,7 @@ from matplotlib import cm
 import pymesh
 import time
 import subprocess
-
+import os
 
 
 matches = glob.glob(sys.argv[1])
@@ -20,9 +20,17 @@ for filename in matches:
 	start = time.time()
 
 	inFile = open(filename, "r");
-	outFile = open("color." + filename, "w");
+	path = filename.split("/")
+
+	path[len(path) - 1] =  "color." + path[len(path) - 1]
+	outName = "/".join(path)
+
+	if(os.path.exists(outName)):
+		print("tile %s exists, skipping" % outName)
+		continue
 
 
+	outFile = open(outName, "w");
 
 	for line in inFile:
 		result = line.split(' ')
