@@ -53,9 +53,9 @@ for file_name in matches:
 	if(os.path.exists(outputFilename)):
 		print("tile %s exists, skipping" % outputFilename)
 		continue
-	# translate_obj(file_name, -translate)
+	translate_obj(file_name, -translate)
 
-	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", outputFilename])
+	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "R", "-M", "NF", "-n", "0.01", "-i", file_name, "-o", outputFilename])
 	
 	# translate_obj(file_name, translate)
 

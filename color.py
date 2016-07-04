@@ -13,7 +13,7 @@ import os
 
 
 matches = glob.glob(sys.argv[1])
-print("= = = = = = = = = Merging = = = = = = = = = =")
+print("= = = = = = = = = Coloring = = = = = = = = = =")
 print(matches)
 
 for filename in matches:
@@ -49,7 +49,7 @@ for filename in matches:
 
 			cmap = matplotlib.cm.get_cmap('inferno')
 
-			c = cmap(float(v[2]) / 350)
+			c = cmap((float(v[2]) + 0.001) / 0.004)
 			# print("color", c)
 
 			outFile.write("v %s %s %s %s %s %s\n" % (v[0], v[1], v[2], c[0], c[1], c[2]))

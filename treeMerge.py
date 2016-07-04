@@ -53,15 +53,21 @@ def colorize(filename):
 
 meshBuffer = [0, 0]
 readyMutex = [0, 0]
-block = "swa1"
+block = "swa3"
 
 
-def tileName(x, y, l) :
+def decTileName(x, y, l) :
 	return "%s-tiles/dec.l%d.%d.%d.obj" % (block, l, x, y)
 
+def tileName(x, y, l) :
+	return "%s-tiles/l%d.%d.%d.obj" % (block, l, x, y)
+
 def tryGetTile(x, y, l):
+	decname = decTileName(x, y, l)
+	if(os.path.exists(decname)):
+		return pymesh.load_mesh(decname)
+		
 	name = tileName(x, y, l)
-	print(name)
 	if(os.path.exists(name)):
 		return pymesh.load_mesh(name)
 	else :
@@ -103,7 +109,9 @@ for l in range(levels) :
 		for y in range(ty):
 			readyMutex = [0, 0]
 			result_name = "%s-tiles/l%d.%d.%d.obj" % (block, l+1, x, y)
-			if(os.path.exists(result_name)):
+			dec_result_name = "%s-tiles/dec.l%d.%d.%d.obj" % (block, l+1, x, y)
+
+			if(os.path.exists(result_name) or os.path.exists(dec_result_name) ):
 				print("tile %s exists, skipping" % result_name)
 				continue
 
@@ -135,8 +143,7 @@ for l in range(levels) :
 
 			if meshBuffer[0] != "" :
 				pymesh.save_mesh(result_name, meshBuffer[0])
-				dec_result_name = "%s-tiles/dec.l%d.%d.%d.obj" % (block, l+1, x, y)
-				subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", result_name, "-o", dec_result_name])
+				# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", result_name, "-o", dec_result_name])
 
 
 exit(0)

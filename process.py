@@ -55,8 +55,8 @@ def translate_obj(filename, translation) :
 	subprocess.call(["rm", filename+".bak"])
 
 
-def export(name, tile, translate) :
-	print("Marching Cubes %s" % name)
+def export(obj_filename, tile, translate) :
+	print("Marching Cubes %s" % obj_filename)
 	# print translate
 
 	start = time.time()
@@ -64,7 +64,6 @@ def export(name, tile, translate) :
 
 	v, t = mcubes.marching_cubes(tile, 0.3)
 	print("Reconstruction in %f" % (time.time() - start))
-	obj_filename = "./%s.obj" % name
 	# decimated_obj = "./dec.%s.obj"
 
 	objFile = open(obj_filename, "w");
@@ -77,7 +76,7 @@ def export(name, tile, translate) :
 	for i in range(len(t)):
 		objFile.write("f %d %d %d\n" % (t[i][0]+1, t[i][1]+1, t[i][2]+1 ))
 
-	print("\t Exporting %s (%d verts , %d tris) in %fs" % (name, len(v), len(t), (time.time() - start)))
+	print("\t Exporting %s (%d verts , %d tris) in %fs" % (obj_filename, len(v), len(t), (time.time() - start)))
 	objFile.close()
 	# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.5", "-i", obj_filename, "-o", decimated_obj % name]); 
 
@@ -154,7 +153,7 @@ def populateVolume(points, vol_dim, tile_pos) :
 # files =  glob.glob("./*swc3.las.txt")
 # filename = "/Users/nshelton/lidar-processing/data/cinderAustin/Capitol.xyz"
 
-inputFile = "swa2"
+inputFile = "swa3"
 
 filename = "./%s.las.txt" % inputFile
 programStart = time.time()
@@ -186,10 +185,8 @@ for tile_x in range(len(tilePoints)):
 	for tile_y in range(len(tilePoints[tile_x])):
 
 		current_time = datetime.datetime.now().time()
-		
+		print("time is %s", current_time.isoformat())
 
-		print("time is %s", current_time.isoformat() )
-		
 		result_file ="%s-tiles/l0.%d.%d.obj" % (inputFile, tile_x, tile_y)
 		if(os.path.exists(result_file)):
 			print("tile %s exists, skipping" % result_file)
