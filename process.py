@@ -153,7 +153,7 @@ def populateVolume(points, vol_dim, tile_pos) :
 # files =  glob.glob("./*swc3.las.txt")
 # filename = "/Users/nshelton/lidar-processing/data/cinderAustin/Capitol.xyz"
 
-inputFile = "swa3"
+inputFile = "swc1"
 
 filename = "./%s.las.txt" % inputFile
 programStart = time.time()

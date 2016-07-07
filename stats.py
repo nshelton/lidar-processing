@@ -20,6 +20,7 @@ import sys
 import glob
 from scipy import spatial
 
+
 translate = np.array([3113903.000000, 10072758.300000, 504.980011])
 
 def translate_obj(filename, translation) : 
@@ -40,23 +41,47 @@ def translate_obj(filename, translation) :
 
 	subprocess.call(["rm", filename+".bak"])
 
+def print_stats(filename) : 
+	print(filename)
+	points = []
+	num_faces = 0
+	infile = open(filename)
+
+	for line in infile:
+		if line[0] == 'v':
+			fields = line.split()
+			points.append([float(fields[1]), float(fields[2]), float(fields[3])])
+
+		if line[0] == 'f':
+			num_faces += 1
+
+	infile.close()
+	
+	points = np.array(points)
+
+	v_max = np.amax(points, axis=0) 
+	v_min = np.amin(points, axis=0) 
+	v_range = v_max - v_min
+
+	center = v_min+v_range/2
+
+	print(center)
+
+	if center[0] > 10000:
+		print("Subtract")
+		translate_obj(filename, -translate)
+
+
+	if center[0] < -10000:
+		print("Add")
+		translate_obj(filename, translate)
+
+	print("\t Extrema: %s  --> %s " % (v_min, v_max))
+	print("\t Range: %s " % (v_range))
 
 matches = glob.glob(sys.argv[1])
 print(matches)
 
 for file_name in matches:
-
-	path = file_name.split("/")
-	path[len(path) - 1] =  "dec." + path[len(path) - 1]
-
-	outputFilename = "/".join(path)
-	if(os.path.exists(outputFilename)):
-		print("tile %s exists, skipping" % outputFilename)
-		continue
-	translate_obj(file_name, -translate)
-
-	subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:50", "-n", "0.01", "-i", file_name, "-o", outputFilename])
-	
-	# translate_obj(file_name, translate)
-
+	print_stats(file_name)
 
