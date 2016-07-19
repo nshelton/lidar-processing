@@ -66,10 +66,10 @@ def tryGetTile(x, y, l):
 	decname = decTileName(x, y, l)
 	if(os.path.exists(decname)):
 		return pymesh.load_mesh(decname)
-		
 	name = tileName(x, y, l)
 	if(os.path.exists(name)):
-		return pymesh.load_mesh(name)
+		print("loaded ", name)
+		# return pymesh.load_mesh(name)
 	else :
 		return ""
 
@@ -84,7 +84,7 @@ def tryMerge(f1, f2, index):
 		merged = f1
 	else:
 		start = time.time()
-		merged = pymesh.boolean(f1, f2, operation="union")
+		# merged = pymesh.boolean(f1, f2, operation="union")
 		print("\tmerged in %f" % (time.time() - start))
 
 	meshBuffer[index] = merged
@@ -141,8 +141,8 @@ for l in range(levels) :
 			while readyMutex[0] == 0 :
 				time.sleep(1)
 
-			if meshBuffer[0] != "" :
-				pymesh.save_mesh(result_name, meshBuffer[0])
+			# if meshBuffer[0] != "" :
+				# pymesh.save_mesh(result_name, meshBuffer[0])
 				# subprocess.call(["commandlineDecimater", "-M", "AR", "-M", "NF", "-M", "ND:80", "-n", "0.1", "-i", result_name, "-o", dec_result_name])
 
 

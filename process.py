@@ -181,8 +181,8 @@ vol_dim = np.array([tileSize,tileSize,totalRange[2]])
 
 struct = ndimage.generate_binary_structure(3,3)
 
-for tile_x in range(len(tilePoints)):
-	for tile_y in range(len(tilePoints[tile_x])):
+for tile_x in [0] : #range(len(tilePoints)):
+	for tile_y in [7] : #range(len(tilePoints[tile_x])):
 
 		current_time = datetime.datetime.now().time()
 		print("time is %s", current_time.isoformat())
